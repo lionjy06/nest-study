@@ -3,7 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { Connection, DataSource, Repository } from 'typeorm';
 import bcrypt from 'bcrypt';
 
 @Injectable()
@@ -11,6 +11,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly dataSource: DataSource,
   ) {}
   async create(createUserDto: CreateUserDto) {
     const { email, password, ...rest } = createUserDto;
@@ -23,11 +24,23 @@ export class UsersService {
 
     const hashedPassowrd = await bcrypt.hash(password, 5);
 
-    return await this.userRepository.save({
-      password: hashedPassowrd,
-      email,
-      ...rest,
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    queryRunner.connect();
+
+    await queryRunner.startTransaction('SERIALIZABLE');
+    try {
+      // transaction에서는 this.userRepository를 쓰면 transaction이 안걸린다. 이유는 this.repository는 처음 연결시 걸리는거고 transaction을 열때 연결을 하고싶으면 queryRunner.manager.getRepository(엔티티이름).메소드를 해야 연결이된다.
+      await queryRunner.manager.getRepository(User).save({
+        password: hashedPassowrd,
+        email,
+        ...rest,
+      });
+      queryRunner.commitTransaction();
+    } catch (e) {
+      queryRunner.rollbackTransaction();
+    } finally {
+      queryRunner.release();
+    }
   }
 
   findAll() {
