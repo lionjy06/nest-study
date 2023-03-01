@@ -13,7 +13,7 @@ async function bootstrap() {
 
   app.use(
     session({
-      name: 'asdasddasd',
+      name: 'testSession',
       secret: '1234',
       resave: false,
       saveUninitialized: false,

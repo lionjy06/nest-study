@@ -7,6 +7,8 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -19,6 +21,7 @@ import { AuthService } from 'src/auth/local-auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { LoggedInGuard } from 'src/auth/logged-in.guard';
 import { NotLoggedInGuard } from 'src/auth/not-logged-in.guard';
+import { Request, Response } from 'express';
 
 @Controller('users')
 export class UsersController {
@@ -27,13 +30,14 @@ export class UsersController {
     private readonly authService: AuthService,
   ) {}
 
+  @UseGuards(new NotLoggedInGuard())
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     return await this.usersService.create(createUserDto);
   }
 
   @Post('login')
-  @UseGuards(new NotLoggedInGuard())
+  @UseGuards(new LocalAuthGuard())
   @ApiOperation({
     summary: '로그인인 기능',
     description: '로그인을 통한 유저 auth',
@@ -43,11 +47,15 @@ export class UsersController {
     console.log('hi');
   }
 
-  @UseGuards(LoggedInGuard)
+  @UseGuards(new LoggedInGuard())
   @ApiOperation({ summary: '로그아웃' })
   @Post('logout')
-  async logout(@UserDecorator() user) {
-    console.log(user);
+  async logout(@Req() req: Request, @Res() res: Response) {
+    req.logOut((err) => {
+      if (err) res.redirect('/');
+      else res.status(201).send('로그아웃 완료');
+    });
+    res.clearCookie('testSession', { httpOnly: true });
   }
 
   @Get()
