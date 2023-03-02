@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
   Res,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -66,6 +67,13 @@ export class UsersController {
   @Get('/findUser')
   findOne(@Param('email') email: string) {
     return this.usersService.findOne(email);
+  }
+
+  @Get(':id')
+  findById(@Param('id', ParseIntPipe) id: number): Promise<User> {
+    // parseIntPipe는 string을 number로 변환해준다. param, query, body모두 사용자로부터 넘겨받을때는 '1','2' 이런식으로 string타입이다. 그래서 parseIntPipe를 통해 number로 바꿔주는것이다.
+    // parseIntPipe말고도 때에따라 parseArrayPipe같은것도 사용할수있다. parseArrayPipe같이 옵션을 붙일수 있는경우는 new를 앞에 붙여준다. ex. new ParseArrayPipe({items:string, seperator:','})
+    return this.usersService.findById(id);
   }
 
   @Patch(':id')

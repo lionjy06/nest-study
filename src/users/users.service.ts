@@ -3,12 +3,13 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Connection, DataSource, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
   constructor(
+    // constructor안에 repository를 넣어주는것이 권장사항이나 만약 service를 extends했는데 안될경우에는 constructor밖에 꺼내서 선언해줄수있다.
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
@@ -53,6 +54,10 @@ export class UsersService {
 
   update(id: number, updateUserDto: UpdateUserDto) {
     return `This action updates a #${id} user`;
+  }
+
+  async findById(myId: number): Promise<User> {
+    return await this.userRepository.findOne({ where: { id: myId } });
   }
 
   remove(id: number) {
